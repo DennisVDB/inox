@@ -1,6 +1,8 @@
 package inox
 package parsing
 
+import scala.util.parsing.combinator.RegexParsers
+
 /**
   * Created by junze on 5/1/17.
   */
@@ -25,18 +27,40 @@ trait DataTypeParsers { self: Interpolator =>
 
     import inox.parsing.DataTypeIR._
 
-    lazy val tpe: Parser[Identifier] = ???
+    lazy val identifier: Parser[Identifier] = acceptMatch("Name", {
+      case lexical.Identifier(name) => Identifier(name)
+    })
 
-    lazy val tpeArgs: Parser[Seq[Type]] = ???
+    lazy val tpeArg: Parser[Type] = acceptMatch("Types", {
+      case lexical.Identifier(tpe) => tpe
+    })
 
-    val constructor: Parser[DataConstructor] = ???
+    lazy val tpeArgs
+      : Parser[Seq[Type]] = p('[') ~> repsep(tpeArg, kw(",")) <~ p(']')
 
-    val constructors: Parser[Seq[DataConstructor]] = rep1(kw("|") ~> constructor)
+    val argument: Parser[(Identifier, Type)] = for {
+      id <- identifier
+      _ <- kw(":")
+      tpe <- tpeArg
+    } yield (id, tpe)
+
+    val arguments: Parser[Seq[(Identifier, Type)]] = p('(') ~> repsep(
+      argument,
+      kw(",")) <~ p(')')
+
+    val constructor: Parser[DataConstructor] = for {
+      id <- identifier
+      tps <- tpeArgs
+      args <- arguments
+    } yield DataConstructor(id, tps, args)
+
+    val constructors: Parser[Seq[DataConstructor]] =
+      rep1sep(constructor, kw("|"))
 
     val dataType: Parser[TypeConstructor] = {
       for {
         _ <- kw("type")
-        id <- commit(tpe)
+        id <- commit(identifier)
         tps <- commit(tpeArgs)
         _ <- kw("=")
         cons <- commit(constructors)
