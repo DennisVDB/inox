@@ -1,9 +1,10 @@
-package inox.parsing
+package inox
+package parsing
 
 import scala.util.parsing.input.Positional
 
 /** Contains abstract Intermediate Representation (IR) language for data-types. */
-trait DataTypeIR { self: Interpolator =>
+object DataTypeIR { self: Interpolator =>
 
   case class Identifier(name: String)
 
@@ -15,7 +16,7 @@ trait DataTypeIR { self: Interpolator =>
 
   case class TypeConstructor(id: Identifier,
                              tps: Seq[Type],
-                             cons: Seq[DataConstructor])
+                             constructors: Seq[DataConstructor])
       extends DataType("TypeConstructor")
 
   case class DataConstructor(id: Identifier,

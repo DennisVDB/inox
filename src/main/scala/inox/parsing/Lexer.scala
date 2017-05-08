@@ -45,7 +45,8 @@ trait Lexers { self: Interpolator =>
       acceptSeq("assume") <~ not(identChar | digit) ^^^ Keyword("assume") |
       acceptSeq("=") ^^^ Keyword("=") |
       acceptSeq("type") ^^^ Keyword("type") |
-      acceptSeq("def") ^^^ Keyword("def")
+      acceptSeq("def") ^^^ Keyword("def") |
+      acceptSeq("|") ^^^ Keyword("|")
 
     val comma: Parser[Token] = ',' ^^^ Punctuation(',')
     val dot: Parser[Token] = '.' ^^^ Punctuation('.')
