@@ -46,7 +46,7 @@ trait Lexers { self: Interpolator =>
       acceptSeq("=") ^^^ Keyword("=") |
       acceptSeq("type") ^^^ Keyword("type") |
       acceptSeq("def") ^^^ Keyword("def") |
-      acceptSeq("|") ^^^ Keyword("|")
+      acceptSeq("or") ^^^ Keyword("or")
 
     val comma: Parser[Token] = ',' ^^^ Punctuation(',')
     val dot: Parser[Token] = '.' ^^^ Punctuation('.')

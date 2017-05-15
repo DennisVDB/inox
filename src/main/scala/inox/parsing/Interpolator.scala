@@ -12,7 +12,8 @@ trait Interpolator extends BuiltIns
                       with ConstraintSolvers
                       with Lexers
                       with TypeParsers
-                      with ExpressionParsers {
+                      with ExpressionParsers
+                      with DataTypeParsers {
 
   protected val trees: Trees
   protected val symbols: trees.Symbols
@@ -22,6 +23,7 @@ trait Interpolator extends BuiltIns
   implicit class ExpressionInterpolator(sc: StringContext) {
 
     private lazy val parser = new ExpressionParser()
+    private lazy val dataTypeParser = new DataTypeParser()
 
     object e {
       def apply(args: Any*): Expr = {
@@ -72,6 +74,10 @@ trait Interpolator extends BuiltIns
           case _ => None
         }
       }
+    }
+
+    def dt(args: Any*): DataTypeIR.DataType = {
+      dataTypeParser.getFromSC(sc, args)(dataTypeParser.phrase(dataTypeParser.dataType))
     }
   }
 }

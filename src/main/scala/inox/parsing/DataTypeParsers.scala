@@ -55,7 +55,7 @@ trait DataTypeParsers { self: Interpolator =>
     } yield DataConstructor(id, tps, args)
 
     val constructors: Parser[Seq[DataConstructor]] =
-      rep1sep(constructor, kw("|"))
+      rep1sep(constructor, kw("or"))
 
     val dataType: Parser[TypeConstructor] = {
       for {
