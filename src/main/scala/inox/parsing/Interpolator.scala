@@ -9,6 +9,7 @@ trait Interpolator extends BuiltIns
                       with Constraints
                       with TypeIRs
                       with ExprIRs
+                      with DataTypeIRs
                       with ConstraintSolvers
                       with Lexers
                       with TypeParsers

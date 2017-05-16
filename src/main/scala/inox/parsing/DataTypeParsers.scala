@@ -1,8 +1,6 @@
 package inox
 package parsing
 
-import scala.util.parsing.combinator.RegexParsers
-
 /**
   * Created by junze on 5/1/17.
   */
@@ -24,48 +22,46 @@ import scala.util.parsing.combinator.RegexParsers
 trait DataTypeParsers { self: Interpolator =>
 
   class DataTypeParser extends TypeParser {
+    import DataTypeIR._
 
-    import inox.parsing.DataTypeIR._
+    val dataType: Parser[DataTypeSort] = for {
+      _ <- kw("type")
+      id <- identifier
+      tParams <- typeParams
+      _ <- kw("=")
+      cs <- constructors
+    } yield DataTypeSort(id, tParams, cs)
 
-    lazy val identifier: Parser[Identifier] = acceptMatch("Name", {
-      case lexical.Identifier(name) => Identifier(name)
+    lazy val identifier: Parser[Identifier] = acceptMatch("dataTypeId", {
+      case lexical.Identifier(id) => Identifier(id)
     })
 
-    lazy val tpeArg: Parser[Type] = acceptMatch("Types", {
-      case lexical.Identifier(tpe) => tpe
+    lazy val typeParams: Parser[List[TypeParam]] = p('[') ~> repsep(typeParam,
+                                                                 kw(",")) <~ p(
+      ']')
+
+    lazy val typeParam: Parser[TypeParam] = acceptMatch("typeParam", {
+      case lexical.Identifier(t) => t
     })
 
-    lazy val tpeArgs
-      : Parser[Seq[Type]] = p('[') ~> repsep(tpeArg, kw(",")) <~ p(']')
-
-    val argument: Parser[(Identifier, Type)] = for {
-      id <- identifier
-      _ <- kw(":")
-      tpe <- tpeArg
-    } yield (id, tpe)
-
-    val arguments: Parser[Seq[(Identifier, Type)]] = p('(') ~> repsep(
-      argument,
-      kw(",")) <~ p(')')
-
-    val constructor: Parser[DataConstructor] = for {
-      id <- identifier
-      tps <- tpeArgs
-      args <- arguments
-    } yield DataConstructor(id, tps, args)
-
-    val constructors: Parser[Seq[DataConstructor]] =
+    lazy val constructors: Parser[List[DataTypeConstructor]] =
       rep1sep(constructor, kw("or"))
 
-    val dataType: Parser[TypeConstructor] = {
-      for {
-        _ <- kw("type")
-        id <- commit(identifier)
-        tps <- commit(tpeArgs)
-        _ <- kw("=")
-        cons <- commit(constructors)
-      } yield TypeConstructor(id, tps, cons)
-    }
+    lazy val constructor: Parser[DataTypeConstructor] = for {
+      id <- identifier
+      tParams <- typeParams
+      args <- arguments
+    } yield DataTypeConstructor(id, tParams, args)
+
+    lazy val arguments: Parser[List[Argument]] = p('(') ~> repsep(
+      argument,
+      p(',')) <~ p(')')
+
+    lazy val argument: Parser[Argument] = for {
+      id <- identifier
+      _ <- p(':')
+      tpe <- typeExpression
+    } yield Argument(id, tpe)
   }
 
 }
