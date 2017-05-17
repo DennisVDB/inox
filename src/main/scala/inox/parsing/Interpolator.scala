@@ -5,16 +5,17 @@ package parsing
 
 import ast._
 
-trait Interpolator extends BuiltIns
-                      with Constraints
-                      with TypeIRs
-                      with ExprIRs
-                      with DataTypeIRs
-                      with ConstraintSolvers
-                      with Lexers
-                      with TypeParsers
-                      with ExpressionParsers
-                      with DataTypeParsers {
+trait Interpolator
+    extends BuiltIns
+    with Constraints
+    with TypeIRs
+    with ExprIRs
+    with DataTypeIRs
+    with ConstraintSolvers
+    with Lexers
+    with TypeParsers
+    with ExpressionParsers
+    with DataTypeParsers {
 
   protected val trees: Trees
   protected val symbols: trees.Symbols
@@ -28,14 +29,15 @@ trait Interpolator extends BuiltIns
 
     object e {
       def apply(args: Any*): Expr = {
-        ExprIR.getExpr(ir(args : _*))
+        ExprIR.getExpr(ir(args: _*))
       }
 
       def unapplySeq(expr: Expr): Option[Seq[Any]] = {
         val args = Seq.tabulate(sc.parts.length - 1)(MatchPosition(_))
         val ir = parser.getFromSC(sc, args)(parser.phrase(parser.expression))
         ExprIR.extract(expr, ir) match {
-          case Some(mappings) if mappings.size == sc.parts.length - 1 => Some(mappings.toSeq.sortBy(_._1).map(_._2))
+          case Some(mappings) if mappings.size == sc.parts.length - 1 =>
+            Some(mappings.toSeq.sortBy(_._1).map(_._2))
           case _ => None
         }
       }
@@ -52,7 +54,7 @@ trait Interpolator extends BuiltIns
     def r(args: Any*): Seq[Lexer.Token] = {
       val reader = Lexer.getReader(sc, args)
 
-      import scala.util.parsing.input.Reader 
+      import scala.util.parsing.input.Reader
 
       def go[A](r: Reader[A]): Seq[A] = {
         if (r.atEnd) Seq()
@@ -69,20 +71,23 @@ trait Interpolator extends BuiltIns
 
       def unapplySeq(tpe: Type): Option[Seq[Any]] = {
         val args = Seq.tabulate(sc.parts.length - 1)(MatchPosition(_))
-        val ir = parser.getFromSC(sc, args)(parser.phrase(parser.typeExpression))
+        val ir =
+          parser.getFromSC(sc, args)(parser.phrase(parser.typeExpression))
         TypeIR.extract(tpe, ir) match {
-          case Some(mappings) if mappings.size == sc.parts.length - 1 => Some(mappings.toSeq.sortBy(_._1).map(_._2))
+          case Some(mappings) if mappings.size == sc.parts.length - 1 =>
+            Some(mappings.toSeq.sortBy(_._1).map(_._2))
           case _ => None
         }
       }
     }
 
     def dt(args: Any*): List[DataTypeIR.DataType] = {
-      dataTypeParser.getFromSC(sc, args)(dataTypeParser.phrase(dataTypeParser.dataTypes))
+      dataTypeParser.getFromSC(sc, args)(
+        dataTypeParser.phrase(dataTypeParser.dataTypes))
     }
 
-//    def sym(args: Any*): Symbols => Symbols = {
-//      DataTypeIR.getDataType(dt(args))
-//    }
+    def sym(args: Any*): Symbols => Symbols = {
+      DataTypeIR.getDataTypes(dt(args))
+    }
   }
 }
