@@ -80,5 +80,9 @@ trait Interpolator extends BuiltIns
     def dt(args: Any*): DataTypeIR.DataType = {
       dataTypeParser.getFromSC(sc, args)(dataTypeParser.phrase(dataTypeParser.dataType))
     }
+
+    def sym(args: Any*): Symbols => Symbols = {
+      DataTypeIR.getDataType(dt(args))
+    }
   }
 }

@@ -9,7 +9,7 @@ import inox.ast.FreshIdentifier
 trait DataTypeElaborators { self: Interpolator =>
   trait DataTypeElaborator { inner: DataTypeIR.type =>
 
-    def getDataType(dataType: DataType)(implicit symbols: trees.Symbols): trees.Symbols = {
+    def getDataType(dataType: DataType)(symbols: trees.Symbols): trees.Symbols = {
       dataType match {
         case DataTypeSort(id, tps, constructors) =>
           val adtSortIdentifier = FreshIdentifier(id.name)

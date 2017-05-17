@@ -27,18 +27,18 @@ trait DataTypeParsers { self: Interpolator =>
     val dataType: Parser[DataTypeSort] = for {
       _ <- kw("type")
       id <- identifier
-      tParams <- typeParams
+      tParams <- opt(typeParams)
       _ <- kw("=")
       cs <- constructors
-    } yield DataTypeSort(id, tParams, cs)
+    } yield DataTypeSort(id, tParams.getOrElse(Seq.empty), cs)
 
     lazy val identifier: Parser[Identifier] = acceptMatch("dataTypeId", {
       case lexical.Identifier(id) => Identifier(id)
     })
 
-    lazy val typeParams: Parser[List[TypeParam]] = p('[') ~> repsep(typeParam,
-                                                                 kw(",")) <~ p(
-      ']')
+    lazy val typeParams: Parser[List[TypeParam]] = p('[') ~> repsep(
+      typeParam,
+      kw(",")) <~ p(']')
 
     lazy val typeParam: Parser[TypeParam] = acceptMatch("typeParam", {
       case lexical.Identifier(t) => t
@@ -49,13 +49,16 @@ trait DataTypeParsers { self: Interpolator =>
 
     lazy val constructor: Parser[DataTypeConstructor] = for {
       id <- identifier
-      tParams <- typeParams
-      args <- arguments
-    } yield DataTypeConstructor(id, tParams, args)
+      tParams <- opt(typeParams)
+      args <- opt(arguments)
+    } yield
+      DataTypeConstructor(id,
+                          tParams.getOrElse(Seq.empty),
+                          args.getOrElse(Seq.empty))
 
-    lazy val arguments: Parser[List[Argument]] = p('(') ~> repsep(
-      argument,
-      p(',')) <~ p(')')
+    lazy val arguments: Parser[List[Argument]] = p('(') ~> repsep(argument,
+                                                                  p(',')) <~ p(
+      ')')
 
     lazy val argument: Parser[Argument] = for {
       id <- identifier
