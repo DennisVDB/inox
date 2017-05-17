@@ -24,7 +24,9 @@ trait DataTypeParsers { self: Interpolator =>
   class DataTypeParser extends TypeParser {
     import DataTypeIR._
 
-    val dataType: Parser[DataTypeSort] = for {
+    val dataTypes: Parser[List[DataTypeSort]] = rep1(dataType)
+
+    lazy val dataType: Parser[DataTypeSort] = for {
       _ <- kw("type")
       id <- identifier
       tParams <- opt(typeParams)
