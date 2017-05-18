@@ -81,13 +81,13 @@ trait Interpolator
       }
     }
 
-    def dt(args: Any*): List[DataTypeIR.DataType] = {
-      dataTypeParser.getFromSC(sc, args)(
-        dataTypeParser.phrase(dataTypeParser.dataTypes))
+    def sym(args: Any*): Symbols => Symbols = {
+      DataTypeIR.getDataTypes(dt(args: _*))
     }
 
-    def sym(args: Any*): Symbols => Symbols = {
-      DataTypeIR.getDataTypes(dt(args))
+    def dt(args: Any*): List[DataTypeIR.DataType] = {
+      dataTypeParser.getFromSC(sc, args)(
+      dataTypeParser.phrase(dataTypeParser.dataTypes))
     }
   }
 }
