@@ -22,7 +22,7 @@ trait FunctionParsers { self : Interpolator =>
 
     import FunctionIR._
 
-    val iden: Parser[Identifier] = positioned(acceptMatch("Identifier", {
+    val funName: Parser[Identifier] = positioned(acceptMatch("Identifier", {
       case lexical.Identifier(name) => IdentifierName(name)
     })) withFailureMessage ((p: Position) =>
       withPos("Identifier expected in Function Definition.", p)
@@ -38,7 +38,7 @@ trait FunctionParsers { self : Interpolator =>
       withPos("Function Type Parameters expected", p))
 
     val funArg: Parser[Argument] = for {
-      id <- commit(iden)
+      id <- commit(funName)
       _ <- p(':')
       ty <- commit(typeParam)
     } yield Argument(id, ty)
@@ -47,12 +47,12 @@ trait FunctionParsers { self : Interpolator =>
 
     val fun : Parser[Function] = for {
       _ <- kw("def")
-      name <- commit(iden withFailureMessage {
+      name <- commit(funName withFailureMessage {
         (p: Position) => withPos("Missing identifier for functions", p)
       })
-      templateParams <- commit(templateParams withFailureMessage((p: Position) =>
+      templateParams <- commit(opt(templateParams) withFailureMessage((p: Position) =>
         withPos("Missing type parameters", p)))
-      arguments <- commit(funArgs withFailureMessage((p: Position) =>
+      arguments <- commit(opt(funArgs) withFailureMessage((p: Position) =>
         withPos("Missing arguments", p)))
       _ <- p(':')
       returnType <- commit(typeParam)
@@ -60,7 +60,8 @@ trait FunctionParsers { self : Interpolator =>
       _ <- p('{')
       body <- rep(expression)
       _ <- p('}')
-    } yield Function(name, templateParams, arguments, returnType, body)
+    } yield Function(name, templateParams.getOrElse(Seq.empty), arguments.getOrElse(Seq.empty), returnType, body)
+
 
   }
 
