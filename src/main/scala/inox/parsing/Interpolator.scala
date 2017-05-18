@@ -10,11 +10,13 @@ trait Interpolator extends BuiltIns
                       with TypeIRs
                       with ExprIRs
                       with DataTypeIRs
+                      with FunctionIRs
                       with ConstraintSolvers
                       with Lexers
                       with TypeParsers
                       with ExpressionParsers
-                      with DataTypeParsers {
+                      with DataTypeParsers
+                      with FunctionParsers {
 
   protected val trees: Trees
   protected val symbols: trees.Symbols
@@ -25,6 +27,7 @@ trait Interpolator extends BuiltIns
 
     private lazy val parser = new ExpressionParser()
     private lazy val dataTypeParser = new DataTypeParser()
+    private lazy val functionParser = new FunctionParser()
 
     object e {
       def apply(args: Any*): Expr = {
@@ -79,6 +82,10 @@ trait Interpolator extends BuiltIns
 
     def dt(args: Any*): List[DataTypeIR.DataType] = {
       dataTypeParser.getFromSC(sc, args)(dataTypeParser.phrase(dataTypeParser.dataTypes))
+    }
+
+    def fun(args: Any*): FunctionIR.Function = {
+      functionParser.getFromSC(sc, args)(functionParser.phrase(functionParser.fun))
     }
 
 //    def sym(args: Any*): Symbols => Symbols = {
