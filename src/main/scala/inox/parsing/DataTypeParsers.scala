@@ -40,7 +40,7 @@ trait DataTypeParsers { self: Interpolator =>
 
     lazy val typeParams: Parser[List[TypeParam]] = p('[') ~> repsep(
       typeParam,
-      kw(",")) <~ p(']')
+      p(',')) <~ p(']')
 
     lazy val typeParam: Parser[TypeParam] = acceptMatch("typeParam", {
       case lexical.Identifier(t) => t
