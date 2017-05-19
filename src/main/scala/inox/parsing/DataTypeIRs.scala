@@ -9,6 +9,8 @@ trait DataTypeIRs extends DataTypeElaborators { self: Interpolator =>
     type Type = TypeIR.Expression
     type TypeParam = String
 
+    case class Arg(id: Identifier, tpe: Type)
+
     case class DataType(id: Identifier,
                         typeParams: Seq[TypeParam],
                         constructors: Seq[ValueConstructor])
@@ -17,6 +19,5 @@ trait DataTypeIRs extends DataTypeElaborators { self: Interpolator =>
                                 typeParams: Seq[TypeParam],
                                 args: Seq[Arg])
 
-    case class Arg(id: Identifier, tpe: Type)
   }
 }

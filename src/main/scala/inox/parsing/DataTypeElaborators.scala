@@ -26,6 +26,12 @@ trait DataTypeElaborators { self: Interpolator =>
           val adtSort = trees.dsl.mkSort(adtSortIdentifier, List.empty: _*)(
             tParams: _*)(adtConsIdentifiers.values.toSeq)
 
+          val typeParams: Map[TypeIR.Value, trees.TypeParameter] = tParams.map(
+            t =>
+              TypeIR.Name(t) -> trees.TypeParameter(FreshIdentifier(t),
+                                                    Set.empty))(
+            collection.breakOut)
+
           constructors
             .foldLeft(symbols.withADTs(Seq(adtSort)))((s, c) => {
               val adtCons =
@@ -35,7 +41,9 @@ trait DataTypeElaborators { self: Interpolator =>
                   _ =>
                     c.args.map {
                       case Arg(id, tpe) =>
-                        trees.ValDef(FreshIdentifier(id), TypeIR.getType(tpe))
+                        trees.ValDef(
+                          FreshIdentifier(id),
+                          TypeIR.getTypeWithContext(tpe)(typeParams, Map.empty))
                     }
                 }
 

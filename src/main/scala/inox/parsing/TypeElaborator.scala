@@ -7,11 +7,12 @@ import scala.util.parsing.input._
 
 import Utils.plural
 
-trait TypeElaborators { self: Interpolator => 
+trait TypeElaborators { self: Interpolator =>
 
   import Utils.{either, traverse, plural}
 
-  trait TypeElaborator { self: TypeIR.type =>
+  trait TypeElaborator {
+    self: TypeIR.type =>
 
     object BVType {
       def apply(size: Int): String = {
@@ -32,12 +33,12 @@ trait TypeElaborators { self: Interpolator =>
 
     lazy val basic: Map[Value, trees.Type] = Seq(
       "Boolean" -> trees.BooleanType,
-      "BigInt"  -> trees.IntegerType,
-      "Char"    -> trees.CharType,
-      "Int"     -> trees.Int32Type,
-      "Real"    -> trees.RealType,
-      "String"  -> trees.StringType,
-      "Unit"    -> trees.UnitType).map({ case (n, v) => Name(n) -> v }).toMap
+      "BigInt" -> trees.IntegerType,
+      "Char" -> trees.CharType,
+      "Int" -> trees.Int32Type,
+      "Real" -> trees.RealType,
+      "String" -> trees.StringType,
+      "Unit" -> trees.UnitType).map({ case (n, v) => Name(n) -> v }).toMap
 
     private lazy val basicInv = basic.map(_.swap)
 
@@ -59,37 +60,44 @@ trait TypeElaborators { self: Interpolator =>
       }
     })
 
-    def getType(tpe: Expression): trees.Type = {
-      toInoxType(tpe) match {
+    def getType(tpe: Expression): trees.Type =
+      getTypeWithContext(tpe)(Map.empty, Map.empty)
+
+    def getTypeWithContext(tpe: Expression)(types: Map[Value, trees.Type], typeConstructors: Map[Value, (Int, (Seq[trees.Type]) => trees.Type)]): trees.Type = {
+      toInoxTypeWithContext(tpe)(types, typeConstructors) match {
         case Right(inoxType) => inoxType
-        case Left(errors) => throw new TypeElaborationException(errors)
+        case Left(errors) => throw TypeElaborationException(errors)
       }
     }
 
-    def toInoxType(expr: Expression): Either[Seq[ErrorLocation], trees.Type] = expr match {
+    def toInoxType(expr: Expression): Either[Seq[ErrorLocation], trees.Type] =
+      toInoxTypeWithContext(expr)(Map.empty, Map.empty)
+
+    def toInoxTypeWithContext(expr: Expression)(types: Map[Value, trees.Type],
+                                                typeConstructors: Map[Value, (Int, Seq[trees.Type] => trees.Type)]): Either[Seq[ErrorLocation], trees.Type] = expr match {
 
       case Operation(Tuple, irs) if irs.size >= 2 =>
-        traverse(irs.map(toInoxType(_))).left.map(_.flatten).right.map(trees.TupleType(_))
+        traverse(irs.map(toInoxTypeWithContext(_)(types, typeConstructors))).left.map(_.flatten).right.map(trees.TupleType)
 
-      case Operation(Arrow, Seq(Operation(Group, froms), to)) => 
+      case Operation(Arrow, Seq(Operation(Group, froms), to)) =>
         either(
-          traverse(froms.map(toInoxType(_))).left.map(_.flatten),
-          toInoxType(to)
-        ){
+          traverse(froms.map(toInoxTypeWithContext(_)(types, typeConstructors))).left.map(_.flatten),
+          toInoxTypeWithContext(to)(types, typeConstructors)
+        ) {
           case (argTpes, retTpe) => trees.FunctionType(argTpes, retTpe)
         }
 
       case Operation(Arrow, Seq(from, to)) =>
         either(
-          toInoxType(from),
-          toInoxType(to)
-        ){
+          toInoxTypeWithContext(from)(types, typeConstructors),
+          toInoxTypeWithContext(to)(types, typeConstructors)
+        ) {
           case (argTpe, retTpe) => trees.FunctionType(Seq(argTpe), retTpe)
         }
 
       case Application(l@Literal(value), irs) =>
         either(
-          parametric.get(value) match {
+          (parametric ++ typeConstructors).get(value) match {
             case None => Left(Seq(ErrorLocation("Unknown type constructor: " + value, l.pos)))
             case Some((n, cons)) => if (n == irs.length) {
               Right(cons)
@@ -99,19 +107,21 @@ trait TypeElaborators { self: Interpolator =>
                 irs.length + " " + plural(irs.length, "was", "were") + " given.", l.pos)))
             }
           },
-          traverse(irs.map(toInoxType(_))).left.map(_.flatten)
-        ){
+          traverse(irs.map(toInoxTypeWithContext(_)(types, typeConstructors))).left.map(_.flatten)
+        ) {
           case (cons, tpes) => cons(tpes)
         }
-        
+
       case Literal(EmbeddedType(t)) => Right(t)
 
       case Literal(Name(BVType(size))) => Right(trees.BVType(size))
 
-      case l@Literal(value) => basic.get(value) match {
-        case None => Left(Seq(ErrorLocation("Unknown type: " + value, l.pos)))
-        case Some(t) => Right(t)
-      }
+      case l@Literal(value) =>
+        print(types)
+        (types ++ basic).get(value) match {
+          case None => Left(Seq(ErrorLocation("Unknown type: " + value, l.pos)))
+          case Some(t) => Right(t)
+        }
 
       case _ => Left(Seq(ErrorLocation("Invalid type.", expr.pos)))
     }
