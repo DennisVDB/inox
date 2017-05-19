@@ -43,7 +43,7 @@ trait DataTypeElaborators { self: Interpolator =>
                       case Arg(id, tpe) =>
                         trees.ValDef(
                           FreshIdentifier(id),
-                          TypeIR.getTypeWithContext(tpe)(typeParams, Map.empty))
+                          TypeIR.getTypeWithContext(tpe)(typeParams, s.adts))
                     }
                 }
 

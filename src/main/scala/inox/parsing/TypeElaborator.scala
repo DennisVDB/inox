@@ -4,7 +4,6 @@ package inox
 package parsing
 
 import scala.util.parsing.input._
-
 import Utils.plural
 
 trait TypeElaborators { self: Interpolator =>
@@ -63,8 +62,8 @@ trait TypeElaborators { self: Interpolator =>
     def getType(tpe: Expression): trees.Type =
       getTypeWithContext(tpe)(Map.empty, Map.empty)
 
-    def getTypeWithContext(tpe: Expression)(types: Map[Value, trees.Type], typeConstructors: Map[Value, (Int, (Seq[trees.Type]) => trees.Type)]): trees.Type = {
-      toInoxTypeWithContext(tpe)(types, typeConstructors) match {
+    def getTypeWithContext(tpe: Expression)(types: Map[Value, trees.Type], adts: Map[ast.Identifier, trees.ADTDefinition]): trees.Type = {
+      toInoxTypeWithContext(tpe)(types, adts) match {
         case Right(inoxType) => inoxType
         case Left(errors) => throw TypeElaborationException(errors)
       }
@@ -74,56 +73,68 @@ trait TypeElaborators { self: Interpolator =>
       toInoxTypeWithContext(expr)(Map.empty, Map.empty)
 
     def toInoxTypeWithContext(expr: Expression)(types: Map[Value, trees.Type],
-                                                typeConstructors: Map[Value, (Int, Seq[trees.Type] => trees.Type)]): Either[Seq[ErrorLocation], trees.Type] = expr match {
+                                                adts: Map[ast.Identifier, trees.ADTDefinition]): Either[Seq[ErrorLocation], trees.Type] = {
 
-      case Operation(Tuple, irs) if irs.size >= 2 =>
-        traverse(irs.map(toInoxTypeWithContext(_)(types, typeConstructors))).left.map(_.flatten).right.map(trees.TupleType)
+      val _adts = adts.toSeq.flatMap({
+        case (i, d) => {
+          val f = (d.tparams.length, (ts: Seq[trees.Type]) => trees.ADTType(i, ts))
 
-      case Operation(Arrow, Seq(Operation(Group, froms), to)) =>
-        either(
-          traverse(froms.map(toInoxTypeWithContext(_)(types, typeConstructors))).left.map(_.flatten),
-          toInoxTypeWithContext(to)(types, typeConstructors)
-        ) {
-          case (argTpes, retTpe) => trees.FunctionType(argTpes, retTpe)
+          Seq(
+            Name(i.name) -> f,
+            EmbeddedIdentifier(i) -> f)
         }
+      }).toMap
 
-      case Operation(Arrow, Seq(from, to)) =>
-        either(
-          toInoxTypeWithContext(from)(types, typeConstructors),
-          toInoxTypeWithContext(to)(types, typeConstructors)
-        ) {
-          case (argTpe, retTpe) => trees.FunctionType(Seq(argTpe), retTpe)
-        }
+      expr match {
 
-      case Application(l@Literal(value), irs) =>
-        either(
-          (parametric ++ typeConstructors).get(value) match {
-            case None => Left(Seq(ErrorLocation("Unknown type constructor: " + value, l.pos)))
-            case Some((n, cons)) => if (n == irs.length) {
-              Right(cons)
-            } else {
-              Left(Seq(ErrorLocation("Type constructor " + value + " takes " +
-                n + " " + plural(n, "argument", "arguments") + ", " +
-                irs.length + " " + plural(irs.length, "was", "were") + " given.", l.pos)))
-            }
-          },
-          traverse(irs.map(toInoxTypeWithContext(_)(types, typeConstructors))).left.map(_.flatten)
-        ) {
-          case (cons, tpes) => cons(tpes)
-        }
+        case Operation(Tuple, irs) if irs.size >= 2 =>
+          traverse(irs.map(toInoxTypeWithContext(_)(types, adts))).left.map(_.flatten).right.map(trees.TupleType)
 
-      case Literal(EmbeddedType(t)) => Right(t)
+        case Operation(Arrow, Seq(Operation(Group, froms), to)) =>
+          either(
+            traverse(froms.map(toInoxTypeWithContext(_)(types, adts))).left.map(_.flatten),
+            toInoxTypeWithContext(to)(types, adts)
+          ) {
+            case (argTpes, retTpe) => trees.FunctionType(argTpes, retTpe)
+          }
 
-      case Literal(Name(BVType(size))) => Right(trees.BVType(size))
+        case Operation(Arrow, Seq(from, to)) =>
+          either(
+            toInoxTypeWithContext(from)(types, adts),
+            toInoxTypeWithContext(to)(types, adts)
+          ) {
+            case (argTpe, retTpe) => trees.FunctionType(Seq(argTpe), retTpe)
+          }
 
-      case l@Literal(value) =>
-        print(types)
-        (types ++ basic).get(value) match {
-          case None => Left(Seq(ErrorLocation("Unknown type: " + value, l.pos)))
-          case Some(t) => Right(t)
-        }
+        case Application(l@Literal(value), irs) =>
+          either(
+            (_adts ++ parametric).get(value) match {
+              case None => Left(Seq(ErrorLocation("Unknown type constructor: " + value, l.pos)))
+              case Some((n, cons)) => if (n == irs.length) {
+                Right(cons)
+              } else {
+                Left(Seq(ErrorLocation("Type constructor " + value + " takes " +
+                  n + " " + plural(n, "argument", "arguments") + ", " +
+                  irs.length + " " + plural(irs.length, "was", "were") + " given.", l.pos)))
+              }
+            },
+            traverse(irs.map(toInoxTypeWithContext(_)(types, adts))).left.map(_.flatten)
+          ) {
+            case (cons, tpes) => cons(tpes)
+          }
 
-      case _ => Left(Seq(ErrorLocation("Invalid type.", expr.pos)))
+        case Literal(EmbeddedType(t)) => Right(t)
+
+        case Literal(Name(BVType(size))) => Right(trees.BVType(size))
+
+        case l@Literal(value) =>
+          (types ++ basic).get(value) match {
+            case None => Left(Seq(ErrorLocation("Unknown type: " + value, l.pos)))
+            case Some(t) => Right(t)
+          }
+
+        case _ => Left(Seq(ErrorLocation("Invalid type.", expr.pos)))
+      }
     }
   }
 }
