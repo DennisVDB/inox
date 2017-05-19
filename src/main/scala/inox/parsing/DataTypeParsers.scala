@@ -47,7 +47,7 @@ trait DataTypeParsers { self: Interpolator =>
     })
 
     lazy val constructors: Parser[List[ValueConstructor]] =
-      rep1sep(constructor, kw("or"))
+      rep1sep(constructor, elem(lexical.Operator("|")))
 
     lazy val constructor: Parser[ValueConstructor] = for {
       id <- identifier

@@ -10,11 +10,11 @@ trait DataTypeIRs extends DataTypeElaborators { self: Interpolator =>
     type TypeParam = String
 
     case class DataType(id: Identifier,
-                        tps: Seq[TypeParam],
+                        typeParams: Seq[TypeParam],
                         constructors: Seq[ValueConstructor])
 
     case class ValueConstructor(id: Identifier,
-                                tps: Seq[TypeParam],
+                                typeParams: Seq[TypeParam],
                                 args: Seq[Arg])
 
     case class Arg(id: Identifier, tpe: Type)
