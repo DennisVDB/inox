@@ -7,7 +7,7 @@ import scala.util.parsing.input.Positional
   * Created by junze on 5/15/17.
   */
 // probably needs to extend FunctionElaborators
-trait FunctionIRs { self : Interpolator =>
+trait FunctionIRs { self: Interpolator =>
   object FunctionIR extends IR {
     type Operator = Nothing
     type Quantifier = Nothing
@@ -30,8 +30,10 @@ trait FunctionIRs { self : Interpolator =>
     }
 
     case class Argument(id: Identifier, ty: TypeParam)
-    case class Function(name: Identifier, typeParams: Seq[TypeParam],
-                        arguments: Seq[Argument], returnType: TypeParam,
+    case class Function(name: Identifier,
+                        typeParams: Seq[TypeParam],
+                        arguments: Seq[Argument],
+                        returnType: TypeParam,
                         body: Seq[Statement])
   }
 }
