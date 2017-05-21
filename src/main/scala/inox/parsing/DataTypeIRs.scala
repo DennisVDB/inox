@@ -7,16 +7,21 @@ trait DataTypeIRs extends DataTypeElaborators { self: Interpolator =>
 
     type Identifier = String
     type Type = TypeIR.Expression
-    type TypeParam = String
 
-    case class DataType(id: Identifier,
-                        tps: Seq[TypeParam],
-                        constructors: Seq[ValueConstructor])
+    sealed trait Variance
+    case object Invariant extends Variance
+    case object Covariant extends Variance
+    case object Contravariant extends Variance
 
-    case class ValueConstructor(id: Identifier,
-                                tps: Seq[TypeParam],
-                                args: Seq[Arg])
+    case class TypeParam(name: String, v: Variance)
 
     case class Arg(id: Identifier, tpe: Type)
+
+    case class DataType(id: Identifier,
+                        typeParams: Seq[TypeParam],
+                        constructors: Seq[ValueConstructor])
+
+    case class ValueConstructor(id: Identifier, args: Seq[Arg])
+
   }
 }

@@ -40,27 +40,28 @@ trait DataTypeParsers { self: Interpolator =>
 
     lazy val typeParams: Parser[List[TypeParam]] = p('[') ~> repsep(
       typeParam,
-      kw(",")) <~ p(']')
+      p(',')) <~ p(']')
 
-    lazy val typeParam: Parser[TypeParam] = acceptMatch("typeParam", {
-      case lexical.Identifier(t) => t
-    })
+    lazy val typeParam: Parser[TypeParam] = for {
+      v <- opt(variance)
+      n <- acceptMatch("typeParam", {
+        case lexical.Identifier(t) => t
+      })
+    } yield TypeParam(n, v.getOrElse(Invariant))
+
+    lazy val variance: Parser[Variance] =
+      lexical.Operator("+") ^^^ Covariant | lexical.Operator("-") ^^^ Contravariant
 
     lazy val constructors: Parser[List[ValueConstructor]] =
-      rep1sep(constructor, kw("or"))
+      rep1sep(constructor, elem(lexical.Operator("|")))
 
     lazy val constructor: Parser[ValueConstructor] = for {
       id <- identifier
-      tParams <- opt(typeParams)
       args <- opt(arguments)
-    } yield
-      ValueConstructor(id,
-                          tParams.getOrElse(Seq.empty),
-                          args.getOrElse(Seq.empty))
+    } yield ValueConstructor(id, args.getOrElse(Seq.empty))
 
-    lazy val arguments: Parser[List[Arg]] = p('(') ~> repsep(argument,
-                                                                  p(',')) <~ p(
-      ')')
+    lazy val arguments
+      : Parser[List[Arg]] = p('(') ~> repsep(argument, p(',')) <~ p(')')
 
     lazy val argument: Parser[Arg] = for {
       id <- identifier

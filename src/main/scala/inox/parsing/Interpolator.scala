@@ -84,7 +84,7 @@ trait Interpolator
       }
     }
 
-    def sym(args: Any*): Symbols => Symbols = {
+    def sym(args: Any*): Symbols = {
       DataTypeIR.getDataTypes(dt(args: _*))
     }
 
