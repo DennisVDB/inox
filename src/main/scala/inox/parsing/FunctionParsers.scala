@@ -3,7 +3,6 @@ package parsing
 
 import scala.util.parsing.input.Position
 
-
 /**
   * Syntax
   *
@@ -11,12 +10,10 @@ import scala.util.parsing.input.Position
   *   ...
   * }
   */
-
-
 /**
   * Created by junze on 5/15/17.
   */
-trait FunctionParsers { self : Interpolator =>
+trait FunctionParsers { self: Interpolator =>
 
   class FunctionParser extends ExpressionParser {
 
@@ -25,43 +22,58 @@ trait FunctionParsers { self : Interpolator =>
     val funName: Parser[Identifier] = positioned(acceptMatch("Identifier", {
       case lexical.Identifier(name) => IdentifierName(name)
     })) withFailureMessage ((p: Position) =>
-      withPos("Identifier expected in Function Definition.", p)
-      )
+      withPos("Identifier expected in Function Definition.", p))
 
-    val typeParam: Parser[TypeParam] = positioned(acceptMatch("TypeParam", {
-        case lexical.Identifier(t) => IdentifierName(t)
-      })) withFailureMessage ((p: Position) => withPos("Type parameters expected.", p))
+    lazy val typeParam: Parser[TypeParam] = for {
+      v <- opt(variance)
+      n <- acceptMatch("TypeParam", {
+        case lexical.Identifier(t) => t
+      })
+    } yield TypeParam(n, v.getOrElse(Invariant))
 
-    val templateParams: Parser[Seq[TypeParam]] = p('[') ~>
+    lazy val variance: Parser[Variance] =
+      lexical.Operator("+") ^^^ Covariant | lexical.Operator("-") ^^^ Contravariant
+
+//    val typeParam: Parser[TypeParam] = positioned(acceptMatch("TypeParam", {
+//      case lexical.Identifier(t) => IdentifierName(t)
+//    })) withFailureMessage ((p: Position) =>
+//      withPos("Type parameters expected.", p))
+
+    val typeParams: Parser[Seq[TypeParam]] = p('[') ~>
       repsep(typeParam, p(',')) <~
       p(']') withFailureMessage ((p: Position) =>
       withPos("Function Type Parameters expected", p))
 
-    val funArg: Parser[Argument] = for {
+    val funArg: Parser[Arg] = for {
       id <- commit(funName)
       _ <- p(':')
-      ty <- commit(typeParam)
-    } yield Argument(id, ty)
+      tpe <- commit(typeExpression)
+    } yield Arg(id, tpe)
 
-    val funArgs: Parser[Seq[Argument]] = p('(') ~> repsep(funArg, p(',')) <~ p(')')
+    val funArgs: Parser[Seq[Arg]] = p('(') ~> repsep(funArg, p(',')) <~ p(')')
 
-    val fun : Parser[Function] = for {
+    val fun: Parser[Function] = for {
       _ <- kw("def")
-      name <- commit(funName withFailureMessage {
-        (p: Position) => withPos("Missing identifier for functions", p)
+      name <- commit(funName withFailureMessage { (p: Position) =>
+        withPos("Missing identifier for functions", p)
       })
-      templateParams <- commit(opt(templateParams) withFailureMessage((p: Position) =>
-        withPos("Missing type parameters", p)))
-      arguments <- commit(opt(funArgs) withFailureMessage((p: Position) =>
+      templateParams <- commit(
+        opt(typeParams) withFailureMessage ((p: Position) =>
+          withPos("Missing type parameters", p)))
+      arguments <- commit(opt(funArgs) withFailureMessage ((p: Position) =>
         withPos("Missing arguments", p)))
       _ <- p(':')
-      returnType <- commit(typeParam)
+      returnType <- commit(typeExpression)
       _ <- kw("=")
       _ <- p('{')
       body <- rep(expression)
       _ <- p('}')
-    } yield Function(name, templateParams.getOrElse(Seq.empty), arguments.getOrElse(Seq.empty), returnType, body)
-
+    } yield
+      Function(name,
+               templateParams.getOrElse(Seq.empty),
+               arguments.getOrElse(Seq.empty),
+               returnType,
+               body)
 
   }
 
