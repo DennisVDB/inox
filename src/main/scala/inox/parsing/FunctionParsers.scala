@@ -24,20 +24,10 @@ trait FunctionParsers { self: Interpolator =>
     })) withFailureMessage ((p: Position) =>
       withPos("Identifier expected in Function Definition.", p))
 
-    lazy val typeParam: Parser[TypeParam] = for {
-      v <- opt(variance)
-      n <- acceptMatch("TypeParam", {
-        case lexical.Identifier(t) => t
-      })
-    } yield TypeParam(n, v.getOrElse(Invariant))
-
-    lazy val variance: Parser[Variance] =
-      lexical.Operator("+") ^^^ Covariant | lexical.Operator("-") ^^^ Contravariant
-
-//    val typeParam: Parser[TypeParam] = positioned(acceptMatch("TypeParam", {
-//      case lexical.Identifier(t) => IdentifierName(t)
-//    })) withFailureMessage ((p: Position) =>
-//      withPos("Type parameters expected.", p))
+    val typeParam: Parser[TypeParam] = acceptMatch("TypeParam", {
+      case lexical.Identifier(t) => TypeParam(t)
+    }) withFailureMessage ((p: Position) =>
+      withPos("Type parameters expected.", p))
 
     val typeParams: Parser[Seq[TypeParam]] = p('[') ~>
       repsep(typeParam, p(',')) <~
@@ -66,7 +56,7 @@ trait FunctionParsers { self: Interpolator =>
       returnType <- commit(typeExpression)
       _ <- kw("=")
       _ <- p('{')
-      body <- rep(expression)
+      body <- expression
       _ <- p('}')
     } yield
       Function(name,

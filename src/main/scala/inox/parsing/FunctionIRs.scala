@@ -17,12 +17,9 @@ trait FunctionIRs { self: Interpolator =>
     type Type = TypeIR.Expression
     type Statement = ExprIR.Expression
 
-    sealed trait Variance
-    case object Invariant extends Variance
-    case object Covariant extends Variance
-    case object Contravariant extends Variance
-
-    case class TypeParam(name: String, v: Variance)
+    case class TypeParam(name: String) {
+      def getName: String = name
+    }
 
     sealed abstract class Identifier extends Positional {
       def getName: String
@@ -41,6 +38,6 @@ trait FunctionIRs { self: Interpolator =>
                         typeParams: Seq[TypeParam],
                         args: Seq[Arg],
                         retType: Type,
-                        body: Seq[Statement])
+                        body: Statement)
   }
 }
