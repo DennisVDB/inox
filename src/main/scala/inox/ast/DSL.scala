@@ -275,6 +275,14 @@ trait DSL {
     new ADTConstructor(id, tParamDefs, sort, fields, flags.toSet)
   }
 
+  def directMkConstructor(id: Identifier, flags: Flag*)
+                   (tParamNames: String*)
+                   (sort: Option[Identifier])
+                   (fields: Seq[ValDef]) = {
+    val tParamDefs = tParamNames map (tp => TypeParameterDef(TypeParameter.fresh(tp)))
+    new ADTConstructor(id, tParamDefs, sort, fields, flags.toSet)
+  }
+
   // TODO: Remove this at some point
   /* This defines
     def f[A, B](i: BigInt, j: C[A], a: A): (BigInt, C[A]) = {

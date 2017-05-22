@@ -1,7 +1,7 @@
 package inox.parsing
 
 import inox.ast
-import inox.ast.FreshIdentifier
+import inox.ast.{FreshIdentifier, Identifier}
 
 /**
   * Created by dennis on 15/5/17.
@@ -38,16 +38,16 @@ trait DataTypeElaborators { self: Interpolator =>
           constructors
             .foldLeft(symbols.withADTs(Seq(adtSort)))((s, c) => {
               val adtCons =
-                trees.dsl.mkConstructor(adtConsIdentifiers(c.id),
-                                        Seq.empty: _*)(
-                  tParams.map(_.name): _*)(Some(adtSortIdentifier)) { _ =>
+                trees.dsl.directMkConstructor(adtConsIdentifiers(c.id),
+                                              Seq.empty: _*)(
+                  tParams.map(_.name): _*)(Some(adtSortIdentifier))(
                   c.args.map {
                     case Arg(id, tpe) =>
                       trees.ValDef(
                         FreshIdentifier(id),
                         TypeIR.getTypeWithContext(tpe)(typeParams, s.adts))
                   }
-                }
+                )
 
               s.withADTs(Seq(adtCons))
             })
