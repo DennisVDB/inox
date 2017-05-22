@@ -9,7 +9,7 @@ import inox.ast.FreshIdentifier
 trait DataTypeElaborators { self: Interpolator =>
   trait DataTypeElaborator { inner: DataTypeIR.type =>
 
-    def getDataTypes(dataTypes: List[DataType]): trees.Symbols = {
+    def getDataTypes(dataTypes: List[DataType])(symbols: trees.Symbols): trees.Symbols = {
       dataTypes.foldLeft(symbols)((s, dt) => getDataType(dt)(s))
     }
 
@@ -38,16 +38,16 @@ trait DataTypeElaborators { self: Interpolator =>
           constructors
             .foldLeft(symbols.withADTs(Seq(adtSort)))((s, c) => {
               val adtCons =
-                trees.dsl.mkConstructor(adtConsIdentifiers(c.id),
-                                        Seq.empty: _*)(
-                  tParams.map(_.name): _*)(Some(adtSortIdentifier)) { _ =>
+                trees.dsl.directMkConstructor(adtConsIdentifiers(c.id),
+                                              Seq.empty: _*)(
+                  tParams.map(_.name): _*)(Some(adtSortIdentifier))(
                   c.args.map {
                     case Arg(id, tpe) =>
                       trees.ValDef(
                         FreshIdentifier(id),
                         TypeIR.getTypeWithContext(tpe)(typeParams, s.adts))
                   }
-                }
+                )
 
               s.withADTs(Seq(adtCons))
             })
