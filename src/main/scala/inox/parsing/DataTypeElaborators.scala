@@ -1,7 +1,7 @@
 package inox.parsing
 
 import inox.ast
-import inox.ast.{FreshIdentifier, Identifier}
+import inox.ast.FreshIdentifier
 
 /**
   * Created by dennis on 15/5/17.
@@ -9,7 +9,7 @@ import inox.ast.{FreshIdentifier, Identifier}
 trait DataTypeElaborators { self: Interpolator =>
   trait DataTypeElaborator { inner: DataTypeIR.type =>
 
-    def getDataTypes(dataTypes: List[DataType]): trees.Symbols = {
+    def getDataTypes(dataTypes: List[DataType])(symbols: trees.Symbols): trees.Symbols = {
       dataTypes.foldLeft(symbols)((s, dt) => getDataType(dt)(s))
     }
 

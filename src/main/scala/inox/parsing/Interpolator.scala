@@ -84,8 +84,8 @@ trait Interpolator
       }
     }
 
-    def sym(args: Any*): Symbols = {
-      DataTypeIR.getDataTypes(dt(args: _*))
+    def adt(args: Any*): Symbols => Symbols = {
+      DataTypeIR.getDataTypes(adtIR(args: _*))
     }
 
     def fun(args: Any*): FunctionIR.Function = {
@@ -93,7 +93,7 @@ trait Interpolator
         functionParser.phrase(functionParser.fun))
     }
 
-    def dt(args: Any*): List[DataTypeIR.DataType] = {
+    def adtIR(args: Any*): List[DataTypeIR.DataType] = {
       dataTypeParser.getFromSC(sc, args)(
         dataTypeParser.phrase(dataTypeParser.dataTypes))
     }
