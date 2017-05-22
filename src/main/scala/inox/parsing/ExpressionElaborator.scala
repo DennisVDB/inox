@@ -42,7 +42,11 @@ trait ExpressionElaborators { self: Interpolator =>
 
     /** Conversion to Inox expression. */
     def getExpr(expr: Expression): trees.Expr = {
-      typeCheck(expr, Unknown.fresh(expr.pos))(Map()) match {
+      getExprWithMapping(expr, Map())
+    }
+
+    def getExprWithMapping(expr: Expression, store: Map[String, (inox.Identifier, trees.Type)]): trees.Expr = {
+      typeCheck(expr, Unknown.fresh(expr.pos))(store) match {
         case Unsatifiable(es) => throw new ExpressionElaborationException(es)
         case WithConstraints(elaborator, constraints) => {
           val unifier = Solver.solveConstraints(constraints)

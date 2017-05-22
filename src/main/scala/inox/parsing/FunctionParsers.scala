@@ -42,7 +42,7 @@ trait FunctionParsers { self: Interpolator =>
 
     val funArgs: Parser[Seq[Arg]] = p('(') ~> repsep(funArg, p(',')) <~ p(')')
 
-    val fun: Parser[Function] = for {
+    val function: Parser[Function] = for {
       _ <- kw("def")
       name <- commit(funName withFailureMessage { (p: Position) =>
         withPos("Missing identifier for functions", p)
@@ -65,6 +65,7 @@ trait FunctionParsers { self: Interpolator =>
                returnType,
                body)
 
+    val functions: Parser[List[Function]] = rep1(function)
   }
 
 }

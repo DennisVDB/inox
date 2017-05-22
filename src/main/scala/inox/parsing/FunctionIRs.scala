@@ -7,8 +7,8 @@ import scala.util.parsing.input.Positional
   * Created by junze on 5/15/17.
   */
 // probably needs to extend FunctionElaborators
-trait FunctionIRs { self: Interpolator =>
-  object FunctionIR extends IR {
+trait FunctionIRs extends FunctionElaborators{ self: Interpolator =>
+  object FunctionIR extends IR with FunctionElaborator {
     type Operator = Nothing
     type Quantifier = Nothing
     type Field = Nothing

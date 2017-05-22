@@ -6,8 +6,7 @@ import inox.ast.FreshIdentifier
   * Created by junze on 5/18/17.
   */
 trait FunctionElaborators { self: Interpolator =>
-
-  class FunctionElaborator { inner: FunctionIR.type =>
+  trait FunctionElaborator { inner: FunctionIR.type =>
 
     def getFunctions(fs: List[Function])(
         symbols: trees.Symbols): trees.Symbols = {
@@ -24,16 +23,25 @@ trait FunctionElaborators { self: Interpolator =>
             .map(trees.TypeParameter.fresh)
             .map(trees.TypeParameterDef(_))
 
-          val paramValDef = args.map {
-            case Arg(id, tpe) =>
-              trees.ValDef(FreshIdentifier(id.getName),
-                           TypeIR.getType(tpe),
-                           Set.empty)
+          val argIds = args.map {
+            case Arg(id, tpe) => FreshIdentifier(id.getName)
+          }
+
+          val paramValDef = args zip argIds map {
+            case (Arg(id, tpe), freshID) =>
+              trees.ValDef(freshID, TypeIR.getType(tpe), Set.empty)
           }
 
           val returnType = TypeIR.getType(retType)
 
-          val funBody = ExprIR.getExpr(body)
+          val mapping: Map[String, (inox.Identifier, trees.Type)] = args
+            .zip(argIds)
+            .map({
+              case (Arg(id, tpe), freshID) =>
+                id.getName -> (freshID, TypeIR.getType(tpe))
+            })(collection.breakOut)
+
+          val funBody = ExprIR.getExprWithMapping(body, mapping)
 
           new trees.FunDef(funIdentifier,
                            typeParamsDef,
