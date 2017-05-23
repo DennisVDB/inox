@@ -34,9 +34,6 @@ trait FunctionElaborators { self: Interpolator =>
                 Set.empty)
           }
 
-          val returnType =
-            TypeIR.getTypeWithContext(retType)(typeParams, symbols.adts)
-
           val mapping: Map[String, (inox.Identifier, trees.Type)] = args
             .zip(argIds)
             .map({
@@ -46,6 +43,9 @@ trait FunctionElaborators { self: Interpolator =>
             })(collection.breakOut)
 
           val funBody = ExprIR.getExprWithMapping(body, mapping)
+
+          val returnType = retType.fold(funBody.getType(symbols))(
+            TypeIR.getTypeWithContext(_)(typeParams, symbols.adts))
 
           new trees.FunDef(
             funIdentifier,

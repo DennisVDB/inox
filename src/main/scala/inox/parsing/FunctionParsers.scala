@@ -42,6 +42,8 @@ trait FunctionParsers { self: Interpolator =>
 
     val funArgs: Parser[Seq[Arg]] = p('(') ~> repsep(funArg, p(',')) <~ p(')')
 
+    val retType: Parser[TypeIR.Expression] = p(':') ~> typeExpression
+
     val function: Parser[Function] = for {
       _ <- kw("def")
       name <- commit(funName withFailureMessage { (p: Position) =>
@@ -52,8 +54,7 @@ trait FunctionParsers { self: Interpolator =>
           withPos("Missing type parameters", p)))
       arguments <- commit(opt(funArgs) withFailureMessage ((p: Position) =>
         withPos("Missing arguments", p)))
-      _ <- p(':')
-      returnType <- commit(typeExpression)
+      returnType <- commit(opt(retType))
       _ <- kw("=")
       _ <- p('{')
       body <- expression
