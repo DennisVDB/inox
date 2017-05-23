@@ -34,7 +34,7 @@ trait FunctionElaborators { self: Interpolator =>
                 Set.empty)
           }
 
-          val retType =
+          val returnType =
             TypeIR.getTypeWithContext(retType)(typeParams, symbols.adts)
 
           val mapping: Map[String, (inox.Identifier, trees.Type)] = args
@@ -51,7 +51,7 @@ trait FunctionElaborators { self: Interpolator =>
             funIdentifier,
             typeParams.values.map(trees.TypeParameterDef(_)).toSeq,
             paramValDef,
-            retType,
+            returnType,
             funBody,
             Set.empty)
       }))
