@@ -18,37 +18,42 @@ trait FunctionElaborators { self: Interpolator =>
         case Function(id, tParams, args, retType, body) =>
           val funIdentifier = FreshIdentifier(id.getName)
 
-          val typeParamsDef = tParams
-            .map(_.getName)
-            .map(trees.TypeParameter.fresh)
-            .map(trees.TypeParameterDef(_))
-
           val argIds = args.map {
-            case Arg(id, tpe) => FreshIdentifier(id.getName)
+            case Arg(id, _) => FreshIdentifier(id.getName)
           }
+
+          val typeParams: Map[TypeIR.Value, trees.TypeParameter] = tParams.map(
+            t => TypeIR.Name(t.getName) -> trees.TypeParameter.fresh(t.getName)
+          )(collection.breakOut)
 
           val paramValDef = args zip argIds map {
             case (Arg(id, tpe), freshID) =>
-              trees.ValDef(freshID, TypeIR.getType(tpe), Set.empty)
+              trees.ValDef(
+                freshID,
+                TypeIR.getTypeWithContext(tpe)(typeParams, symbols.adts),
+                Set.empty)
           }
 
-          val returnType = TypeIR.getType(retType)
+          val retType =
+            TypeIR.getTypeWithContext(retType)(typeParams, symbols.adts)
 
           val mapping: Map[String, (inox.Identifier, trees.Type)] = args
             .zip(argIds)
             .map({
               case (Arg(id, tpe), freshID) =>
-                id.getName -> (freshID, TypeIR.getType(tpe))
+                id.getName -> (freshID, TypeIR
+                  .getTypeWithContext(tpe)(typeParams, symbols.adts))
             })(collection.breakOut)
 
           val funBody = ExprIR.getExprWithMapping(body, mapping)
 
-          new trees.FunDef(funIdentifier,
-                           typeParamsDef,
-                           paramValDef,
-                           returnType,
-                           funBody,
-                           Set.empty)
+          new trees.FunDef(
+            funIdentifier,
+            typeParams.values.map(trees.TypeParameterDef(_)).toSeq,
+            paramValDef,
+            retType,
+            funBody,
+            Set.empty)
       }))
 
   }
