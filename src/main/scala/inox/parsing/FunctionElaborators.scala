@@ -1,5 +1,6 @@
 package inox.parsing
 
+import inox.ast
 import inox.ast.FreshIdentifier
 
 /**
@@ -8,16 +9,26 @@ import inox.ast.FreshIdentifier
 trait FunctionElaborators { self: Interpolator =>
   trait FunctionElaborator { inner: FunctionIR.type =>
 
-    def getFunctions(fs: List[Function])(
-        symbols: trees.Symbols): trees.Symbols = {
-      fs.foldLeft(symbols)((s, f) => getFunction(f)(s))
+    def getFunctions(fs: List[Function])(symbols: trees.Symbols)
+      : (Map[String, ast.Identifier], trees.Symbols) = {
+      fs.foldLeft((Map.empty[String, ast.Identifier], symbols)) {
+        case ((ids, s), f) => getFunction(f)(ids, s)
+      }
     }
 
-    def getFunction(f: Function)(symbols: trees.Symbols): trees.Symbols =
-      symbols.withFunctions(Seq(f match {
-        case Function(id, tParams, args, retType, body) =>
-          val funIdentifier = FreshIdentifier(id.getName)
+    def getFunction(f: Function)(ids: Map[String, ast.Identifier],
+                                 symbols: trees.Symbols)
+      : (Map[String, ast.Identifier], trees.Symbols) = {
+      val funIdentifier = f match {
+        case Function(id, _, _, _, _) =>
+          FreshIdentifier(id.getName)
+      }
 
+      (f match {
+        case Function(id, _, _, _, _) =>
+          ids + (id.getName -> funIdentifier)
+      }, symbols.withFunctions(Seq(f match {
+        case Function(id, tParams, args, retType, body) =>
           val argIds = args.map {
             case Arg(id, _) => FreshIdentifier(id.getName)
           }
@@ -54,7 +65,7 @@ trait FunctionElaborators { self: Interpolator =>
             returnType,
             funBody,
             Set.empty)
-      }))
-
+      })))
+    }
   }
 }

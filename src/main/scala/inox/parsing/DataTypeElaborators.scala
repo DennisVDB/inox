@@ -9,12 +9,16 @@ import inox.ast.FreshIdentifier
 trait DataTypeElaborators { self: Interpolator =>
   trait DataTypeElaborator { inner: DataTypeIR.type =>
 
-    def getDataTypes(dataTypes: List[DataType])(symbols: trees.Symbols): trees.Symbols = {
-      dataTypes.foldLeft(symbols)((s, dt) => getDataType(dt)(s))
+    def getDataTypes(dataTypes: List[DataType])(symbols: trees.Symbols)
+      : (Map[String, ast.Identifier], trees.Symbols) = {
+      dataTypes.foldLeft((Map.empty[String, ast.Identifier], symbols)) {
+        case ((ids, s), dt) => getDataType(dt)(ids, s)
+      }
     }
 
-    def getDataType(dataType: DataType)(
-        symbols: trees.Symbols): trees.Symbols = {
+    def getDataType(dataType: DataType)(ids: Map[String, ast.Identifier],
+                                        symbols: trees.Symbols)
+      : (Map[String, ast.Identifier], trees.Symbols) = {
       dataType match {
         case DataType(id, tParams, constructors) =>
           val adtSortIdentifier = FreshIdentifier(id)
@@ -35,22 +39,23 @@ trait DataTypeElaborators { self: Interpolator =>
                   case Contravariant => Set(trees.Variance(false))
                 }))(collection.breakOut)
 
-          constructors
-            .foldLeft(symbols.withADTs(Seq(adtSort)))((s, c) => {
-              val adtCons =
-                trees.dsl.directMkConstructor(adtConsIdentifiers(c.id),
-                                              Seq.empty: _*)(
-                  tParams.map(_.name): _*)(Some(adtSortIdentifier))(
-                  c.args.map {
-                    case Arg(id, tpe) =>
-                      trees.ValDef(
-                        FreshIdentifier(id),
-                        TypeIR.getTypeWithContext(tpe)(typeParams, s.adts))
-                  }
-                )
+          (adtConsIdentifiers + (id -> adtSortIdentifier),
+           constructors
+             .foldLeft(symbols.withADTs(Seq(adtSort)))((s, c) => {
+               val adtCons =
+                 trees.dsl.directMkConstructor(adtConsIdentifiers(c.id),
+                                               Seq.empty: _*)(
+                   tParams.map(_.name): _*)(Some(adtSortIdentifier))(
+                   c.args.map {
+                     case Arg(id, tpe) =>
+                       trees.ValDef(
+                         FreshIdentifier(id),
+                         TypeIR.getTypeWithContext(tpe)(typeParams, s.adts))
+                   }
+                 )
 
-              s.withADTs(Seq(adtCons))
-            })
+               s.withADTs(Seq(adtCons))
+             }))
       }
     }
   }

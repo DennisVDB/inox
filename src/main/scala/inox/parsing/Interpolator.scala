@@ -84,7 +84,7 @@ trait Interpolator
       }
     }
 
-    def adt(args: Any*): Symbols => Symbols = {
+    def adt(args: Any*): Symbols => (Map[String, Identifier], Symbols) = {
       DataTypeIR.getDataTypes(adtIR(args: _*))
     }
 
@@ -93,7 +93,7 @@ trait Interpolator
         dataTypeParser.phrase(dataTypeParser.dataTypes))
     }
 
-    def fun(args: Any*): Symbols => Symbols = {
+    def fun(args: Any*): Symbols => (Map[String, Identifier], Symbols) = {
       FunctionIR.getFunctions(funIR(args: _*))
     }
 
