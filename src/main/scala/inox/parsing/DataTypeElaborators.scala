@@ -39,7 +39,13 @@ trait DataTypeElaborators { self: Interpolator =>
                   case Contravariant => Set(trees.Variance(false))
                 }))(collection.breakOut)
 
-          (adtConsIdentifiers + (id -> adtSortIdentifier),
+          // TODO: argument names can not overlap between ADTS...
+          val argIdentifiers: Map[Identifier, ast.Identifier] = (for {
+            c <- constructors
+            Arg(id, _) <- c.args
+          } yield id -> FreshIdentifier(id))(collection.breakOut)
+
+          (adtConsIdentifiers ++ argIdentifiers + (id -> adtSortIdentifier),
            constructors
              .foldLeft(symbols.withADTs(Seq(adtSort)))((s, c) => {
                val adtCons =
@@ -49,7 +55,7 @@ trait DataTypeElaborators { self: Interpolator =>
                    c.args.map {
                      case Arg(id, tpe) =>
                        trees.ValDef(
-                         FreshIdentifier(id),
+                         argIdentifiers(id),
                          TypeIR.getTypeWithContext(tpe)(typeParams, s.adts))
                    }
                  )
