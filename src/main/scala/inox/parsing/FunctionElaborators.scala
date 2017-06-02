@@ -58,6 +58,10 @@ trait FunctionElaborators { self: Interpolator =>
           val returnType = retType.fold(funBody.getType(symbols))(
             TypeIR.getTypeWithContext(_)(typeParams, symbols.adts))
 
+          if (returnType != funBody.getType(symbols)) {
+            throw new Exception("Wrong return type")
+          }
+
           new trees.FunDef(
             funIdentifier,
             typeParams.values.map(trees.TypeParameterDef(_)).toSeq,

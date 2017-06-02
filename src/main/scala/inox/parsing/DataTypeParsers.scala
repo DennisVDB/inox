@@ -60,8 +60,8 @@ trait DataTypeParsers { self: Interpolator =>
       args <- opt(arguments)
     } yield ValueConstructor(id, args.getOrElse(Seq.empty))
 
-    lazy val arguments
-      : Parser[List[Arg]] = p('(') ~> repsep(argument, p(',')) <~ p(')')
+    val arguments: Parser[List[Arg]] =
+      p('(') ~> repsep(argument, p(',')) <~ p(')')
 
     lazy val argument: Parser[Arg] = for {
       id <- identifier

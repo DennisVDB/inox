@@ -48,6 +48,7 @@ trait DataTypeElaborators { self: Interpolator =>
           (adtConsIdentifiers ++ argIdentifiers + (id -> adtSortIdentifier),
            constructors
              .foldLeft(symbols.withADTs(Seq(adtSort)))((s, c) => {
+               println(s.adts)
                val adtCons =
                  trees.dsl.directMkConstructor(adtConsIdentifiers(c.id),
                                                Seq.empty: _*)(
